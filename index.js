@@ -2,6 +2,17 @@ const axios = require("axios");
 const cheerio = require("cheerio");
 const nodemailer = require("nodemailer");
 const fs = require("fs");
+const express = require("express");
+const app = express();
+app.get("/",(req,res)=>{
+  checkBhaskarAndSendMail();
+  res.send("hello");
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`your app started at http://localhost:${PORT}`);
+});
 
 function checkBhaskarAndSendMail() {
   axios
@@ -102,5 +113,5 @@ function checkBhaskarAndSendMail() {
 }
 
 // setInterval(checkBhaskarAndSendMail, 5000);
-checkBhaskarAndSendMail();
+// checkBhaskarAndSendMail();
 
