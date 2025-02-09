@@ -94,7 +94,7 @@ function checkBhaskarAndSendMail() {
                       console.log(res.data.shortenedUrl);
                       axios
                         .get(
-                          `https://api.telegram.org/${process.env.TOKEN}/sendMessage?chat_id=${process.env.CH}&text=Title:- ${vidUrl[0].name} || *Video:-*  [Click Here](${vidUrl[0].embedUrl}) || _If You Want to help us Watch with this Link - ${res.data.shortenedUrl}_&parse_mode=markdown`
+                          `https://api.telegram.org/${process.env.TOKEN}/sendMessage?chat_id=${process.env.CH}&text=Title:- ${vidUrl[0].name} || *Video:-*  [Click Here](${vidUrl[0].embedUrl}) || If You Want to help us Watch with this Link - ${res.data.shortenedUrl}`
                         )
                         .then((res) => {
                           console.log(res.data.ok);
