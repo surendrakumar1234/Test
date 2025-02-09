@@ -85,7 +85,20 @@ function checkBhaskarAndSendMail() {
                 ) {
                   console.log("new video not available");
                 } else {
-
+                  axios
+                    .get(
+                      `https://instantlinks.co/api?api=24571ab77a4901c5e7d16fb6f2b02dbd6c5c3db2&url=${vidUrl[0].embedUrl}&type=2`
+                    )
+                    .then((res) => {
+                      console.log(res.data.shortenedUrl);
+                      axios
+                        .get(
+                          `https://api.telegram.org/bot6465806242:AAH5As3iEipDMow9d8IM8bmGXya3udjEgYM/sendMessage?chat_id=@daily_newspaper_hindi24&text=Title:- ${vidUrl[0].name} || *Video:-*  [Click Here](${vidUrl[0].embedUrl}) || _If You Want to help us Watch with this Link - ${res.data.shortenedUrl}_&parse_mode=markdown`
+                        )
+                        .then((res) => {
+                          console.log(res.data.ok);
+                        });
+                    });
 
 
 
