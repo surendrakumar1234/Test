@@ -8,6 +8,9 @@ const nodemailer = require("nodemailer");
 const express = require("express");
 const app = express();
 
+const PORT = process.env.port || 3000;
+
+
 app.set("view engine", "ejs");
 app.set("views", path.resolve("./views"));
 
@@ -189,7 +192,7 @@ app.all("*", (req, res) => {
   res.redirect("/");
 });
 
-app.listen(3000, () => console.log("server started"));
+app.listen(PORT, () => console.log("server started"));
 
 function checkNewPost() {
   try {
