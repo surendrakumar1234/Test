@@ -29,7 +29,7 @@ app.get("/", (req, res) => {
           return res.send("hello2");
         } else {
           jobs = JSON.parse(jobdata);
-          console.log("jobbulatin", jobs);
+          // console.log("jobbulatin", jobs);
 
           const fsdata = JSON.parse(data);
           fsdata.forEach((data) => {
