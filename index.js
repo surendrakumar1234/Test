@@ -489,6 +489,7 @@ function bhaskarKhaasJob() {
   }
 }
 bhaskarKhaasJob();
+setInterval(bhaskarKhaasJob,900000);
 
 // function bhaskarKhaasJob2(joburl) {
 //   try {
