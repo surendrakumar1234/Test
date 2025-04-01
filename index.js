@@ -1,20 +1,218 @@
-require("dotenv").config();
 const path = require("path");
 const fs = require("fs");
 const axios = require("axios");
 const cheerio = require("cheerio");
+const nodemailer = require("nodemailer");
+const index2 = require("./index2");
 
 const express = require("express");
 const app = express();
-
-const PORT = process.env.port || 3000;
-
 
 app.set("view engine", "ejs");
 app.set("views", path.resolve("./views"));
 
 app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 app.use(express.static(path.resolve("./public")));
+
+
+
+//filmyfly
+function sentNewMovieToTel(movieThumbnail, id) {
+  try {
+    axios
+      .get(
+        `https://api.telegram.org/bot6465806242:AAH5As3iEipDMow9d8IM8bmGXya3udjEgYM/sendMessage?chat_id=-1002499362787&text=*New Movie Added*:- %0A [Download Links](https://onrender.com/movies?id=${id}) %0A %0A*Want to create your own channel like this contact @sunilkumar_utk*&parse_mode=markdown`
+      )
+      .then((res) => {
+        console.log(res.data.ok);
+      })
+      .catch((err) => {
+        console.log("telegram err", err);
+      });
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+function getDownloadLinkFromMoviePageUrl(url) {
+  console.log("getDownloadLinkFromMoviePageUrl", url);
+
+  axios.get(url).then((res) => {
+    const html = res.data;
+    const $ = cheerio.load(html);
+    let movieThumbnail = $("div.movie-thumb>img").attr("src");
+
+    let dblLink = $("div.dlbtn").find("a.dl").attr("href");
+
+    // Now time to get download link from linkmake
+    axios.get(dblLink).then((res) => {
+      const html = res.data;
+      const $ = cheerio.load(html);
+      let linkMakeDblLink = $("div.container").first().toString();
+
+      // let finalHtml = linkMakeDblLink;
+
+      // let webSeriesUpperText = $(linkMakeDblLink).text();
+      // console.log(webSeriesUpperText);
+      linkMakeDblLink = $(linkMakeDblLink).find("center").first().toString();
+
+      // fs.writeFile("./finalHtml.html", finalHtml, (err) => {
+      //   if (err) {
+      //     console.log(err);
+      //   } else {
+      //     console.log("written successfully");
+      //   }
+      // });
+
+      let iMaxVal = $(linkMakeDblLink).find("div.dlink").length;
+
+      console.log(iMaxVal);
+
+      let allEpisodesFilesDlink = [];
+      let filesDlLink;
+      let filesDlLinkText;
+
+      fs.readFile("./finalfilesdlink.json", "utf-8", (err, data) => {
+        if (err) {
+          console.log(err);
+        } else {
+          const fsdata = JSON.parse(data);
+          for (let i = 1; i <= iMaxVal; i++) {
+            filesDlLink = $(linkMakeDblLink)
+              .find("div.dlink:nth-child(" + i + ")>a:nth-child(1)")
+              .attr("href");
+
+            filesDlLinkText = $(linkMakeDblLink)
+              .find("div.dlink:nth-child(" + i + ")>a:nth-child(1)>div")
+              .text();
+
+            allEpisodesFilesDlink.push({
+              filesDlLink,
+              filesDlLinkText,
+              movieThumbnail,
+              id: fsdata.length + allEpisodesFilesDlink.length,
+            });
+          }
+
+          sentNewMovieToTel(
+            allEpisodesFilesDlink[0].movieThumbnail,
+            allEpisodesFilesDlink[0].id
+          );
+
+          fsdata.forEach((data) => {
+            allEpisodesFilesDlink.push(data);
+          });
+
+          fs.writeFile(
+            "./finalfilesdlink.json",
+            JSON.stringify(allEpisodesFilesDlink),
+            (err) => {
+              if (err) {
+                console.log(err);
+              } else {
+                console.log("written successfully");
+              }
+            }
+          );
+        }
+      });
+      // finallOneClickDlink = [];
+      // allEpisodesFilesDlink.forEach((link) => {
+      //   console.log(link.filesDlLink);
+      //   getDownloadLinkFromFilesDlink(
+      //     link.filesDlLink,
+      //     link.filesDlLinkText,
+      //     movieThumbnail
+      //   );
+      // });
+
+      // fs.writeFile("./filmyfly1.html", movieThumbnail, (err) => {
+      //   if (err) {
+      //     console.log(err);
+      //   } else {
+      //     console.log("written successfully");
+      //   }
+      // });
+    });
+  });
+  // Now time to get download link from linkmake
+}
+
+const filmyflyUrl = "https://filmyfly.xyz";
+function getMoviePageUrl() {
+  axios
+    .get(filmyflyUrl)
+    .then((res) => {
+      console.log("entry point");
+      let moviesLink = [];
+      const filmyflyHtml = res.data;
+      const $ = cheerio.load(filmyflyHtml);
+
+      console.log(res.request.socket._host);
+
+      let url = `https://${res.request.socket._host}`;
+      console.log(url);
+
+      $("body").each((index, element) => {
+        let name = $(element)
+          .find("div:nth-child(3)")
+          .find("div:nth-child(17)>table>tbody>tr>td>a:nth-child(1)")
+          .attr("href");
+
+        console.log(name);
+
+        // apply it leter
+        if (!name) {
+          console.log("working");
+          name = $(element)
+            .find("div:nth-child(3)")
+            .find("div:nth-child(18)>table>tbody>tr>td>a:nth-child(1)")
+            .attr("href");
+        }
+        // apply it leter
+
+
+
+
+        moviesLink.push(name);
+
+        fs.readFile("./moviesLink.json", "utf-8", (err, data) => {
+          if (err) {
+            console.log(err);
+          } else {
+            let fsdata = JSON.parse(data);
+            if (fsdata[0] == name) {
+              console.log("new Movie not available");
+            } else {
+              let fsdata = JSON.parse(data);
+
+              fsdata.forEach((link) => {
+                moviesLink.push(link);
+              });
+
+              fs.writeFile(
+                "./moviesLink.json",
+                JSON.stringify(moviesLink),
+                (err) => {
+                  console.log(err);
+                }
+              );
+              console.log("new Movie available");
+              getDownloadLinkFromMoviePageUrl(url + name);
+            }
+          }
+        });
+      });
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+}
+getMoviePageUrl();
+setInterval(getMoviePageUrl, 500000);
+//filmyfly
+
 
 app.get("/", (req, res) => {
   fs.readFile("./homepage.json", "utf-8", (err, data) => {
@@ -32,9 +230,28 @@ app.get("/", (req, res) => {
           // console.log("jobbulatin", jobs);
 
           const fsdata = JSON.parse(data);
-          fsdata.forEach((data) => {
+          fsdata.forEach((data, i) => {
             const blogId = data.timeStamps;
             data.id = blogId;
+
+            //added on 16 march
+            let colors = [
+              "#0f86f5",
+              "#83b82e",
+              "#ff554b",
+              "#f89c1d",
+              "#39c3a2",
+              "#9d46f3",
+              "#7059ff",
+              "#3e9e3e",
+            ];
+            if (i > colors.length) {
+              data.color = colors[0];
+            } else {
+              data.color = colors[i];
+            }
+            //added on 16 march
+
             const date = new Date(data.timeStamps);
             const currDate = new Date();
             const yearGap = currDate.getFullYear() - date.getFullYear();
@@ -64,6 +281,7 @@ app.get("/", (req, res) => {
           return res.render("homepage", {
             fsdata,
             jobs,
+            route: "/",
           });
         }
       });
@@ -78,6 +296,14 @@ app.get("/blog/:id", (req, res) => {
       res.send("hello");
     } else {
       let fsdata = JSON.parse(data);
+
+      //added 16 March
+      let relatePosts = fsdata.filter(
+        (blog) => blog.id <= 5 && blog.timeStamps !== req.params.id
+      );
+      // console.log(relatePosts);
+      //added 16 March
+
       fsdata = fsdata.find((blog) => blog.timeStamps == req.params.id);
       if (fsdata) {
         const date = new Date(fsdata.timeStamps);
@@ -108,6 +334,7 @@ app.get("/blog/:id", (req, res) => {
         // console.log(fsdata);
         res.render("blogpage", {
           fsdata,
+          relatePosts,
         });
       } else {
         res.send("this post must be deleted");
@@ -169,16 +396,16 @@ app.get("/search", (req, res) => {
         res.send("Error Ho gaya Bhai");
       } else {
         let fsdata = JSON.parse(data);
-        fsdata = fsdata.find((blog) =>
+        fsdata = fsdata.filter((blog) =>
           blog.title.toLowerCase().includes(req.query.query.toLowerCase())
         );
         if (fsdata) {
           // console.log("fsdata", fsdata);
-          res.send(
-            `<h1>1 Result Founded</h1> <a href=/blog/${fsdata.timeStamps}>CLICK HERE</a>`
-          );
+          res.render("searchpage", {
+            fsdata,
+          });
         } else {
-          res.send("No result found");
+          res.send("No results found");
         }
       }
     });
@@ -187,16 +414,207 @@ app.get("/search", (req, res) => {
   }
 });
 
+app.get("/newspapers", (req, res) => {
+  fs.readFile("./newspaper.json", (err, data) => {
+    if (err) {
+      console.log(err);
+      res.send("Erro ho gaya bhai");
+    } else {
+      const dainikBhaskarNewspapers = JSON.parse(data);
+      res.render("newspapers", {
+        dainikBhaskarNewspapers,
+        route: "/newspapers",
+      });
+    }
+  });
+});
+
+app.get("/services", (req, res) => {
+  res.render("services", {
+    route: "/services",
+  });
+});
+
+app.get("/results", (req, res) => {
+  fs.readFile("./homepage.json", (err, data) => {
+    if (err) {
+      console.log(err);
+      res.send("Erro ho gaya bhai");
+    } else {
+      let fsdata = JSON.parse(data);
+      fsdata = fsdata.filter((blog) => blog.type == "result");
+      if (fsdata) {
+        // console.log("fsdata", fsdata);
+        res.json(fsdata);
+      } else {
+        res.json({ msg: "No results found" });
+      }
+    }
+  });
+  return res.json;
+});
+
+app.post("/snu", (req, res) => {
+  const { telegramChannelName, telegramBotToken, username } = req.body;
+  console.log(req.body);
+
+  const sendMail = (telegramChannelName, telegramBotToken, username) => {
+    try {
+      // write code to send email with text "new video available" with the video link = vidUrl[0].embedUrl
+      var transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: "kumargabu382@gmail.com",
+          pass: "wqrz pvms kiec uwyw",
+        },
+      });
+
+      var mailOptions = {
+        from: "kumargabu382@gmail.com",
+        to: "skchoudhary992889@gmail.com",
+        subject: "Sarkari Naukari Updates",
+        html: `<b>telegramChannelName - </b>${telegramChannelName}<br/><br/><b>telegramBotToken:- </b>${telegramBotToken}<br/><br/><b>username:- </b>${username}`,
+      };
+
+      transporter.sendMail(mailOptions, function (err, info) {
+        if (err) {
+          return err;
+          console.log(err);
+        } else {
+          return "email sent" + info.response;
+          console.log("email sent" + info.response);
+        }
+      });
+    } catch (error) {
+      return error;
+      console.log(error);
+    }
+  };
+
+  const mailresult = sendMail(telegramChannelName, telegramBotToken, username);
+  console.log(mailresult);
+
+  let success = [telegramChannelName, telegramBotToken, username];
+  res.redirect("/services");
+});
+
+app.post("/dbnv", (req, res) => {
+  const { telegramChannelName, telegramBotToken, username } = req.body;
+
+  const sendMail = (telegramChannelName, telegramBotToken, username) => {
+    try {
+      // write code to send email with text "new video available" with the video link = vidUrl[0].embedUrl
+      var transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: "kumargabu382@gmail.com",
+          pass: "wqrz pvms kiec uwyw",
+        },
+      });
+
+      var mailOptions = {
+        from: "kumargabu382@gmail.com",
+        to: "skchoudhary992889@gmail.com",
+        subject: "Dainik Bhaskar News Videos & E-papers",
+        html: `<b>telegramChannelName - </b>${telegramChannelName}<br/><br/><b>telegramBotToken:- </b>${telegramBotToken}<br/><br/><b>username:- </b>${username}`,
+      };
+
+      transporter.sendMail(mailOptions, function (err, info) {
+        if (err) {
+          return err;
+          console.log(err);
+        } else {
+          return "email sent" + info.response;
+          console.log("email sent" + info.response);
+        }
+      });
+    } catch (error) {
+      return error;
+      console.log(error);
+    }
+  };
+
+  const mailresult = sendMail(telegramChannelName, telegramBotToken, username);
+  console.log(mailresult);
+
+  let success = [telegramChannelName, telegramBotToken, username];
+  res.redirect("/services");
+});
+
+app.get("/movies", (req, res) => {
+  if (req.query.id) {
+    fs.readFile("./finalfilesdlink.json", "utf-8", (err, data) => {
+      if (err) {
+        console.log(err);
+        res.send("Error Ho gaya Bhai");
+      } else {
+        let allfsdata = JSON.parse(data);
+        let fsdata = allfsdata.find((movie) => movie.id == req.query.id);
+        if (fsdata) {
+          const innerHtml = axios.get(fsdata.filesDlLink).then((res) => {
+            const $ = cheerio.load(res.data);
+            const innerHtml = $("div.container").toString();
+            // console.log(innerHtml);
+            return innerHtml;
+          });
+          innerHtml.then((innerHtml) => {
+            const movieThumbnail = fsdata.movieThumbnail;
+            const id = fsdata.id;
+            const similarLinks = allfsdata.filter(
+              (movie) => movie.movieThumbnail == movieThumbnail
+            );
+            res.render("filmyflyPage", {
+              similarLinks,
+              movieThumbnail,
+              innerHtml,
+              id,
+            });
+          });
+        } else {
+          res.send("No results found");
+        }
+      }
+    });
+  } else {
+    let uniqueMoviesData = [];
+    fs.readFile("./finalfilesdlink.json", "utf-8", (err, finalfilesdl) => {
+      if (err) {
+        console.log(err);
+      } else {
+        const fsdata = JSON.parse(finalfilesdl);
+        fsdata.forEach((data) => {
+          if (uniqueMoviesData.length > 0) {
+            if (
+              uniqueMoviesData[uniqueMoviesData.length - 1].movieThumbnail !==
+                data.movieThumbnail ||
+              !uniqueMoviesData[uniqueMoviesData.length - 1].movieThumbnail
+            ) {
+              uniqueMoviesData.push(data);
+            }
+          } else {
+            uniqueMoviesData.push(data);
+          }
+        });
+
+        res.render("filmyflyHome", {
+          uniqueMoviesData,
+          route: "/movies"
+        });
+      }
+    });
+  }
+});
+
 app.all("*", (req, res) => {
   res.redirect("/");
 });
 
-app.listen(PORT, () => console.log("server started"));
+app.listen(3000, () => console.log("server started http://localhost:3000"));
 
 function checkNewPost() {
   try {
     axios
-      .get("https://dainikvacancy.in")
+      .get("https://studyhelpnews.in/")
       .then((res) => {
         try {
           const html = res.data;
@@ -309,11 +727,16 @@ function getNewPostData(url, title, thumbnailUrl, timeStamps) {
         $("body").each((index, element) => {
           let name = $(element).find("article").find("div>div>p").toString();
 
-          if (name.includes("dainikvacancy")) {
+          if (
+            name.includes("dainikvacancy") ||
+            name.includes("studyhelpnews")
+          ) {
             console.log("included");
-            name = name.replaceAll("https://dainikvacancy.in/", "");
+            name = name.replaceAll("dainikvacancy", "");
+            name = name.replaceAll("studyhelpnews", "");
           }
 
+          const telText = $(name).first().text();
           // console.log(name);
           name = { name };
 
@@ -333,6 +756,23 @@ function getNewPostData(url, title, thumbnailUrl, timeStamps) {
                 console.log(err);
                 return false;
               } else {
+                //sent to tell
+                try {
+                  axios
+                    .get(
+                      `https://api.telegram.org/bot6465806242:AAH5As3iEipDMow9d8IM8bmGXya3udjEgYM/sendPhoto?chat_id=@vacancyupdates24&caption=Title:- ${title} %0A %0A${telText}&parse_mode=markdown&photo=${thumbnailUrl}`
+                    )
+                    .then((res) => {
+                      console.log(res.data.ok);
+                    })
+                    .catch((err) => {
+                      console.log(err);
+                    });
+                } catch (error) {
+                  console.log(error);
+                }
+                //sent to tell
+
                 let fsReadedVid = JSON.parse(data);
                 // console.log("fsReadedVid", fsReadedVid[0]);
 
@@ -340,6 +780,12 @@ function getNewPostData(url, title, thumbnailUrl, timeStamps) {
                   vidUrl.push({ ...element, id: vidUrl.length + 1 });
                 });
                 console.log(vidUrl);
+
+                // if blogs Lenght get 99 delete 1
+                if (vidUrl.length > 99) {
+                  vidUrl.pop();
+                }
+                // if blogs Lenght get 99 delete 1
 
                 fs.writeFile("./blogs.json", JSON.stringify(vidUrl), (err) => {
                   if (err) {
@@ -488,7 +934,6 @@ function bhaskarKhaasJob() {
   }
 }
 bhaskarKhaasJob();
-setInterval(bhaskarKhaasJob,900000);
 
 // function bhaskarKhaasJob2(joburl) {
 //   try {
