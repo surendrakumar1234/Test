@@ -1,0 +1,29 @@
+<h1>hello</h1>
+<% if (locals.finallOneClickDlink) { %>
+<h1>Successfully</h1>
+<% } %>
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script src="./axios/dist/axios.js"></script>
+    <script>
+      let clutter = "";
+      console.log(location.origin + "/results");
+
+      axios
+        .get("https://example.com")
+        .then((res) => {
+          console.log(res.data);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    </script>
+  </body>
+</html>
