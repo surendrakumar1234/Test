@@ -599,7 +599,7 @@ app.listen(PORT, () => console.log("server started http://localhost:3000"));
 function checkNewPost() {
   try {
     axios
-      .get("https://studyhelpnews.in/")
+      .get("https://skresult.com/")
       .then((res) => {
         try {
           const html = res.data;
