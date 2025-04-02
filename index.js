@@ -5,6 +5,8 @@ const cheerio = require("cheerio");
 const nodemailer = require("nodemailer");
 const index2 = require("./index2");
 
+const PORT = process.env.port || 3000;
+
 const express = require("express");
 const app = express();
 
@@ -609,7 +611,7 @@ app.all("*", (req, res) => {
   res.redirect("/");
 });
 
-app.listen(3000, () => console.log("server started http://localhost:3000"));
+app.listen(PORT, () => console.log("server started http://localhost:3000"));
 
 function checkNewPost() {
   try {
