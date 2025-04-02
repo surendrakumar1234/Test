@@ -1,3 +1,4 @@
+require("dotenv").config();
 const path = require("path");
 const fs = require("fs");
 const axios = require("axios");
@@ -5,7 +6,7 @@ const cheerio = require("cheerio");
 const nodemailer = require("nodemailer");
 const index2 = require("./index2");
 
-const PORT = process.env.port || 3000;
+const PORT = process.env.PORT || 3000;
 
 const express = require("express");
 const app = express();
@@ -20,22 +21,7 @@ app.use(express.static(path.resolve("./public")));
 
 
 //filmyfly
-function sentNewMovieToTel(movieThumbnail, id) {
-  try {
-    axios
-      .get(
-        `https://api.telegram.org/bot6465806242:AAH5As3iEipDMow9d8IM8bmGXya3udjEgYM/sendMessage?chat_id=-1002499362787&text=*New Movie Added*:- %0A [Download Links](https://onrender.com/movies?id=${id}) %0A %0A*Want to create your own channel like this contact @sunilkumar_utk*&parse_mode=markdown`
-      )
-      .then((res) => {
-        console.log(res.data.ok);
-      })
-      .catch((err) => {
-        console.log("telegram err", err);
-      });
-  } catch (error) {
-    console.log(error);
-  }
-}
+
 
 function getDownloadLinkFromMoviePageUrl(url) {
   console.log("getDownloadLinkFromMoviePageUrl", url);
@@ -97,10 +83,7 @@ function getDownloadLinkFromMoviePageUrl(url) {
             });
           }
 
-          sentNewMovieToTel(
-            allEpisodesFilesDlink[0].movieThumbnail,
-            allEpisodesFilesDlink[0].id
-          );
+          
 
           fsdata.forEach((data) => {
             allEpisodesFilesDlink.push(data);
